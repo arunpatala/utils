@@ -21,7 +21,7 @@ from keras.callbacks import ModelCheckpoint, LambdaCallback
 
 batch_size = 100
 original_dim = 784
-latent_dim = 2
+latent_dim = 64
 intermediate_dim = 256
 epochs = 50
 epsilon_std = 1.0
@@ -60,6 +60,7 @@ vae.add_loss(vae_loss)
 vae.compile(optimizer='rmsprop')
 vae.summary()
 
+#vae.load_weights('models/vae.50.ckpt.tgz')
 
 # train the VAE on MNIST digits
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -110,14 +111,44 @@ def plot_samples(epoch):
 
     plt.figure(figsize=(10, 10))
     #plt.imshow(figure, cmap='Greys_r')
-    plt.imsave('models/samples{}.png'.format(epoch), figure, cmap='Greys_r')
+    plt.imsave('models/samples.png', figure, cmap='Greys_r')
     #plt.show()
 
+
+
+def plot_interpolation(epoch):
+    encoder = Model(x, z_mean)
+
+    x_test_encoded = encoder.predict(x_test[:11], batch_size=batch_size)
+    digit_size = 28
+    n = 10
+    figure = np.zeros((digit_size * n, digit_size * n))
+    for  i in range(10):
+        xi = x_test_encoded[i]
+        xxi = x_test[i].reshape(digit_size, digit_size)
+        yi = x_test_encoded[i+1]
+        yyi = x_test[i+1].reshape(digit_size, digit_size)
+        for j in range(10):
+            xyi = ((xi*(9-j)+yi*(j))/9)
+            z_sample = np.array([xyi])
+            x_decoded = generator.predict(z_sample)
+
+            digit = x_decoded[0].reshape(digit_size, digit_size)
+            if j==0: digit = xxi
+            if j==9: digit = yyi
+            figure[i * digit_size: (i + 1) * digit_size,
+                   j * digit_size: (j + 1) * digit_size] = digit
+
+    plt.figure(figsize=(10, 10))
+    #plt.imshow(figure, cmap='Greys_r')
+    plt.imsave('models/interpolation.png'.format(epoch), figure, cmap='Greys_r')
+    plt.close()
+
 lambda_callback = LambdaCallback(
-    on_epoch_end=lambda epoch, logs: plot_samples(epoch)
+    on_epoch_end=lambda epoch, logs: plot_interpolation(epoch)
 )
 
-ckpt = ModelCheckpoint('models/vae.{epoch:02d}.ckpt.tgz')
+ckpt = ModelCheckpoint('models/vae.ckpt.tgz')
 
 vae.fit(x_train,
         shuffle=True,
