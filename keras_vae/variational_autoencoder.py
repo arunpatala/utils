@@ -21,7 +21,7 @@ from keras.callbacks import ModelCheckpoint, LambdaCallback
 
 batch_size = 100
 original_dim = 784
-latent_dim = 64
+latent_dim = 256
 intermediate_dim = 256
 epochs = 50
 epsilon_std = 1.0
