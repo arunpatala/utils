@@ -33,10 +33,11 @@ class MixTensorGenerator():
     def __call__(self):
         for (X1,y1),(X2,y2) in zip(self.gen1(), self.gen2()):
             if self.alpha==0: yield X1,y1
-            l = np.random.beta(self.alpha, self.alpha, len(X1))
-            X_l = l.reshape(len(X1), 1, 1, 1)
-            y_l = l.reshape(len(X1), 1)
-            yield X1 * X_l + X2 * (1 - X_l), y1 * y_l + y2 * (1 - y_l)
+            else:
+                l = np.random.beta(self.alpha, self.alpha, len(X1))
+                X_l = l.reshape(len(X1), 1, 1, 1)
+                y_l = l.reshape(len(X1), 1)
+                yield X1 * X_l + X2 * (1 - X_l), y1 * y_l + y2 * (1 - y_l)
 
     def __len__(self):
         return len(self.gen1)

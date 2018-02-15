@@ -15,31 +15,35 @@ from keras import backend as K
 from mixup_generator import *
 from mnist import *
 from cifar import *
-from keras.callbacks import CSVLogger, ModelCheckpoint
-
+from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
+from model import *
 
 import argparse
 parser = argparse.ArgumentParser(description='alpha mixup')
 parser.add_argument('--alpha','-a', type=float, required=True, action="store")
 parser.add_argument('--dataset','-d', type=str, default='mnist', action="store", choices=['mnist', 'cifar10'])
+parser.add_argument('--epochs','-e', type=int, default=40, action="store")
+parser.add_argument('--batch_size','-b', type=int, default=128, action="store")
 args = parser.parse_args()
 alpha = args.alpha
 print('alpha is', alpha)
 print('dataset is', args.dataset)
 ds = args.dataset
-batch_size = 128
+batch_size = args.batch_size
 num_classes = 10
-epochs = 20
+epochs = args.epochs
+
 if ds=='mnist':
   (x_train, y_train), (x_test, y_test), input_shape = mnist_data()
 elif ds=='cifar10':
   (x_train, y_train), (x_test, y_test), input_shape = cifar10_data()
-else: print("DATASET not found")
+else: 
+  print("DATASET not found")
 
-model = cifar10_cnn(input_shape)
+model = vgg16(input_shape)
 print(model.summary())
 csv_logger = CSVLogger('models/training.{}.log'.format(alpha))
-ckpt = ModelCheckpoint('models/ckpt.{}.tar.gz'.format(alpha))
+ckpt = ModelCheckpoint('models/ckpt.{}.tar.gz'.format(alpha), verbose=1, monitor='val_loss')
 
 model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adadelta(),
@@ -47,13 +51,17 @@ model.compile(loss=keras.losses.categorical_crossentropy,
                   )
 tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=alpha)
 vgen = TensorGenerator(x_test, y_test, batch_size=batch_size)
+
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                              patience=10, min_lr=0.0001, verbose=1)
+
 model.fit_generator(tgen(),
           epochs=epochs,
           steps_per_epoch= len(tgen),
           verbose=1,
           validation_data=vgen(),
           validation_steps=len(vgen),
-          callbacks=[csv_logger, ckpt])
+          callbacks=[csv_logger, ckpt, reduce_lr])
 
 score = model.evaluate(x_train, y_train, verbose=0)
 print('Train loss:', score[0])
