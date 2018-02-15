@@ -1,5 +1,6 @@
 import numpy as np
 from keras.utils import to_categorical
+import math
 
 class TensorGenerator():
     
@@ -16,6 +17,9 @@ class TensorGenerator():
             if self.shuffle: np.random.shuffle(indexes1)
             for i in range(0, len(self.X_train), bs):
                 yield self.X_train[indexes1[i:i+bs]], self.y_train[indexes1[i:i+bs]]
+
+    def __len__(self):
+        return math.ceil(len(self.X_train)/self.batch_size)
                 
 class MixTensorGenerator():
     
@@ -28,10 +32,13 @@ class MixTensorGenerator():
         
     def __call__(self):
         for (X1,y1),(X2,y2) in zip(self.gen1(), self.gen2()):
-            print(X1.shape,X2.shape)
-            l = np.random.beta(self.alpha, self.alpha, self.batch_size)
-            X_l = l.reshape(self.batch_size, 1, 1, 1)
-            y_l = l.reshape(self.batch_size, 1)
+            #print(X1.shape,X2.shape)
+            l = np.random.beta(self.alpha, self.alpha, len(X1))
+            X_l = l.reshape(len(X1), 1, 1, 1)
+            y_l = l.reshape(len(X1), 1)
             yield X1 * X_l + X2 * (1 - X_l), y1 * y_l + y2 * (1 - y_l)
+
+    def __len__(self):
+        return len(self.gen1)
             
             
