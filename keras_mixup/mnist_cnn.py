@@ -26,7 +26,7 @@ args = parser.parse_args()
 alpha = args.alpha
 print('alpha is', alpha)
 print('dataset is', args.dataset)
-
+ds = args.dataset
 batch_size = 128
 num_classes = 10
 epochs = 20
