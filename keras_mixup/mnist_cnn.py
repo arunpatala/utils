@@ -14,32 +14,38 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 from mixup_generator import *
 from mnist import *
+from cifar import *
 from keras.callbacks import CSVLogger, ModelCheckpoint
 
 
 import argparse
 parser = argparse.ArgumentParser(description='alpha mixup')
 parser.add_argument('--alpha','-a', type=float, required=True, action="store")
+parser.add_argument('--dataset','-d', type=str, default='mnist', action="store", choices=['mnist', 'cifar10'])
 args = parser.parse_args()
 alpha = args.alpha
 print('alpha is', alpha)
+print('dataset is', args.dataset)
 
 batch_size = 128
 num_classes = 10
 epochs = 20
-(x_train, y_train), (x_test, y_test), input_shape = mnist_data()
+if ds=='mnist':
+  (x_train, y_train), (x_test, y_test), input_shape = mnist_data()
+elif ds=='cifar10':
+  (x_train, y_train), (x_test, y_test), input_shape = cifar10_data()
+else: print("DATASET not found")
 
-model = mnist_cnn(input_shape)
-
+model = cifar10_cnn(input_shape)
+print(model.summary())
 csv_logger = CSVLogger('models/training.{}.log'.format(alpha))
-ckpt = ModelCheckpoint('models/ckpt{}.tar.gz'.format(alpha))
+ckpt = ModelCheckpoint('models/ckpt.{}.tar.gz'.format(alpha))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'],
                   )
-
-tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=0.2)
+tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=alpha)
 vgen = TensorGenerator(x_test, y_test, batch_size=batch_size)
 model.fit_generator(tgen(),
           epochs=epochs,
