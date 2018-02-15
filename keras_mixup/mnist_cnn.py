@@ -18,9 +18,9 @@ from mnist import *
 batch_size = 128
 num_classes = 10
 epochs = 10
-(x_train, y_train), (x_test, y_test) = mnist_data()
+(x_train, y_train), (x_test, y_test), input_shape = mnist_data()
 
-model = mnist_cnn()
+model = mnist_cnn1(input_shape)
 
 tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=0.2)
 vgen = TensorGenerator(x_test, y_test, batch_size=batch_size)
@@ -30,6 +30,10 @@ model.fit_generator(tgen(),
           verbose=1,
           validation_data=vgen(),
           validation_steps=len(vgen))
+
+score = model.evaluate(x_train, y_train, verbose=0)
+print('Train loss:', score[0])
+print('Train accuracy:', score[1])
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
