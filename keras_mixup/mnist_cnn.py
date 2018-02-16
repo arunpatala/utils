@@ -17,11 +17,12 @@ from mnist import *
 from cifar import *
 from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 from model import *
+from irctc import *
 
 import argparse
 parser = argparse.ArgumentParser(description='alpha mixup')
 parser.add_argument('--alpha','-a', type=float, required=True, action="store")
-parser.add_argument('--dataset','-d', type=str, default='mnist', action="store", choices=['mnist', 'cifar10'])
+parser.add_argument('--dataset','-d', type=str, default='mnist', action="store", choices=['mnist', 'cifar10', 'irctc'])
 parser.add_argument('--epochs','-e', type=int, default=40, action="store")
 parser.add_argument('--batch_size','-b', type=int, default=128, action="store")
 args = parser.parse_args()
@@ -30,25 +31,29 @@ print('alpha is', alpha)
 print('dataset is', args.dataset)
 ds = args.dataset
 batch_size = args.batch_size
-num_classes = 10
+
 epochs = args.epochs
 
 if ds=='mnist':
   (x_train, y_train), (x_test, y_test), input_shape = mnist_data()
 elif ds=='cifar10':
   (x_train, y_train), (x_test, y_test), input_shape = cifar10_data()
-else: 
-  print("DATASET not found")
+elif ds=='irctc':
+  (x_train, y_train), (x_test, y_test), input_shape = irctc_data("small")
+else: print("DATASET not found")
+num_classes = y_test.shape[1]
+model = mnist_cnn(input_shape, num_classes)
+#vae, enc, dec = get_vae(load='vae.ckpt.tgz')
 
-model = vgg16(input_shape)
 print(model.summary())
-csv_logger = CSVLogger('models/training.{}.log'.format(alpha))
-ckpt = ModelCheckpoint('models/ckpt.{}.tar.gz'.format(alpha), verbose=1, monitor='val_loss')
+csv_logger = CSVLogger('models/{}.training.{}.log'.format(ds, alpha))
+ckpt = ModelCheckpoint('models/{}.ckpt.{}.tar.gz'.format(ds, alpha), verbose=1, monitor='val_loss')
 
 model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'],
                   )
+#tgen = VAEMixGenerator(x_train, y_train, enc, dec, batch_size=batch_size, alpha=alpha)
 tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=alpha)
 vgen = TensorGenerator(x_test, y_test, batch_size=batch_size)
 

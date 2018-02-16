@@ -14,6 +14,8 @@ from keras.engine.topology import get_source_inputs
 from keras.utils import layer_utils
 from keras.utils.data_utils import get_file
 from keras import backend as K
+from keras.layers import Input, Dense, Lambda
+from keras import metrics
 
 def vgg16(input_shape, classes=10):
     img_input = Input(shape=input_shape)
@@ -49,3 +51,39 @@ def vgg16(input_shape, classes=10):
     # Create model.
     model = Model(img_input, x, name='vgg16')
     return model
+
+
+
+def get_vae(latent_dim=4, original_dim=784, intermediate_dim = 256, epsilon_std = 1.0, load=None):
+
+    def sampling(args):
+        z_mean, z_log_var = args
+        epsilon = K.random_normal(shape=(K.shape(z_mean)[0], latent_dim), mean=0.,
+                                  stddev=epsilon_std)
+        return z_mean + K.exp(z_log_var / 2) * epsilon
+
+    inp = Input(shape=(original_dim,))
+    x = Dense(intermediate_dim, activation='relu')(inp)
+    z_mean = Dense(latent_dim)(x)
+    z_log_var = Dense(latent_dim)(x)
+    z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
+    enc = Model(inp,z_mean)
+    decoder_h = Dense(intermediate_dim, activation='relu')
+    decoder_mean = Dense(original_dim, activation='sigmoid')
+
+    def dec(y):
+        h_decoded = decoder_h(y)
+        x_decoded_mean = decoder_mean(h_decoded)
+        return x_decoded_mean
+
+    y = Input(shape=(latent_dim,))
+    x_decoded_mean = dec(z)
+    vae = Model(inp, x_decoded_mean)   
+    vae.summary() 
+    # Compute VAE loss
+    xent_loss = original_dim * metrics.binary_crossentropy(inp, x_decoded_mean)
+    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+    vae_loss = K.mean(xent_loss + kl_loss)
+    vae.add_loss(vae_loss)
+    if load is not None: vae.load_weights(load)
+    return vae, enc, Model(y,dec(y))
