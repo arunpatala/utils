@@ -11,7 +11,7 @@ from keras.utils.np_utils import to_categorical
 
 def irctc_data(dirpath, N=100, max_size = 8):
 
-    l = [y[0].upper().replace('2','@').replace('O','Q').replace('C','G') for y in pd.read_csv('irctc.csv', header=None).as_matrix().tolist()]
+    l = [y[0].upper().replace('2','@').replace('O','Q').replace('C','G') for y in pd.read_csv('IRCTC.csv', header=None).as_matrix().tolist()]
 
 
     chars = ['3', '4', '6', '7', '9', '=', '@', 'A', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'T', 'U',
@@ -38,14 +38,20 @@ def irctc_data(dirpath, N=100, max_size = 8):
 
 
     
-    x_train, y_train = loadN(1,N)
+    x_train, y_train = loadN(to=5000)
+    y_train = keras.utils.to_categorical(y_train[:,0], num_classes)
+    x_train = x_train[:,:,:50,:1]
     
+    Nt = (8*5000)//10
+    x_test, y_test = x_train[Nt:], y_train[Nt:]
+    x_train, y_train = x_train[:Nt], y_train[:Nt] 
+    print('y_train', y_train.shape)
     x_train = x_train.astype('float32')
     x_train /= 255
     print('x_train shape:', x_train.shape)
 
     # convert class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train[:,0], num_classes)
-    x_train = x_train[:,:,:50,:1]
+    
+    
     input_shape = x_train[0].shape
-    return (x_train, y_train), (x_train, y_train), input_shape
+    return (x_train, y_train), (x_test, y_test), input_shape

@@ -39,7 +39,7 @@ if ds=='mnist':
 elif ds=='cifar10':
   (x_train, y_train), (x_test, y_test), input_shape = cifar10_data()
 elif ds=='irctc':
-  (x_train, y_train), (x_test, y_test), input_shape = irctc_data("small")
+  (x_train, y_train), (x_test, y_test), input_shape = irctc_data("IRCTC")
 else: print("DATASET not found")
 num_classes = y_test.shape[1]
 model = mnist_cnn(input_shape, num_classes)
