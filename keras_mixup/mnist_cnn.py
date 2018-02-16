@@ -53,8 +53,8 @@ model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'],
                   )
-#tgen = VAEMixGenerator(x_train, y_train, enc, dec, batch_size=batch_size, alpha=alpha)
-tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=alpha)
+tgen = VAEGenerator(batch_size=batch_size)
+#tgen = MixTensorGenerator(x_train, y_train, batch_size=batch_size, alpha=alpha)
 vgen = TensorGenerator(x_test, y_test, batch_size=batch_size)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1,

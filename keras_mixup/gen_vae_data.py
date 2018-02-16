@@ -19,6 +19,8 @@ def vae_save(filepath):
         #print(x.shape, y.shape)
         X.append(x)
         Y.append(y)
+        if x.shape[0]!=128: 
+            break
     X = np.concatenate(X)
     Y = np.concatenate(Y)
     print(X.shape, Y.shape)
